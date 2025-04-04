@@ -1,2 +1,6 @@
-@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
-forge-std/=node_modules/forge-std/
+@openzeppelin/contracts/=dependencies/openzeppelin-contracts/contracts/
+erc4626-tests/=dependencies/openzeppelin-contracts/lib/erc4626-tests/
+forge-std-1.9.2/=dependencies/forge-std-1.9.2/src/
+forge-std/=dependencies/forge-std/src/
+halmos-cheatcodes/=dependencies/openzeppelin-contracts/lib/halmos-cheatcodes/src/
+openzeppelin-contracts/=dependencies/openzeppelin-contracts/
