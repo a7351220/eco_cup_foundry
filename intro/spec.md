@@ -4,6 +4,7 @@
 - **Solidity**: v0.8.28 (specified in foundry.toml)
 - **Foundry**: v1.9.2 (referenced in dependencies)
 - **OpenZeppelin**: v5.0.1 (referenced in package.json)
+- **Self Protocol**: Latest version (for identity verification)
 
 ## 1. Technical Architecture Overview
 
@@ -13,10 +14,13 @@ This project implements the following smart contracts:
 1. **StakingPool.sol** - Manages ETH staking and withdrawal functionality
 2. **EcoCupToken.sol** - Implements ERC-20 standard platform token
 3. **RewardController.sol** - Manages reward calculation and distribution
-4. **VerificationRegistry.sol** - Records user verification status and history
+4. **VerificationRegistry.sol** - Records user verification status and history and integrates with Self Protocol for identity verification
 
 ![Contract Architecture Diagram]
 ```
+                          Self Protocol
+                               |
+                               v
 StakingPool <-----> RewardController <-----> EcoCupToken
      ^                     ^                       ^
      |                     |                       |
@@ -28,6 +32,7 @@ StakingPool <-----> RewardController <-----> EcoCupToken
 - Uses OpenZeppelin's ERC-20 implementation
 - Uses Foundry for development, testing, and deployment
 - Uses Solidity v0.8.28 as the smart contract language
+- Integrates Self Protocol for identity verification through SelfVerificationRoot contract inheritance
 
 ## 2. Implemented Smart Contracts
 
@@ -56,6 +61,8 @@ Verification registry contract records user verification status. Key features:
 - Requires 3 verifications per day to claim rewards
 - Uses AccessControl to define verifier roles
 - Tracks user daily verification count and reward claim status
+- Inherits from SelfVerificationRoot for identity verification
+- Maintains mapping of users who completed identity verification
 
 ## 3. Implementation Details
 
@@ -69,11 +76,19 @@ Verification registry contract records user verification status. Key features:
 - Verification status stored on-chain
 - Verifications confirmed by authorized verifier accounts
 - Daily verification count resets each new day
+- Users must complete Self identity verification before performing cup verifications
 
 ### 3.3 Reward Calculation
 - Rewards based on user's staked ETH amount and fixed APR
 - Default APR is 5% (represented as 500 with base 10000)
 - Rewards can only be claimed after completing 3 daily verifications
+
+### 3.4 Identity Verification
+- Integrated with Self Protocol through SelfVerificationRoot contract
+- Verifies user identity using zero-knowledge proofs
+- Configuration options for age and nationality verification
+- Identity verification is a prerequisite for cup verification
+- Prevents duplicate accounts and verification fraud
 
 ## 4. Simplified Testing Strategy
 
@@ -108,12 +123,21 @@ Verification registry contract records user verification status. Key features:
 - Frontend captures eco-friendly cup photos
 - Verification results submitted on-chain through verifier
 - Display user verification status and progress
+- Integrate with Self application for identity verification
 
 ### 6.3 User Interface
 - Display user stake amount
 - Show daily verification completion status
 - Display claimable rewards
 - Provide staking and withdrawal functionality
+- Guide users through Self identity verification process
+- Show identity verification status
+
+### 6.4 Self Protocol Integration
+- Implement deep linking to Self application
+- Guide users through identity document scanning process
+- Handle zero-knowledge proof verification callbacks
+- Display user identity verification status
 
 ## 7. Future Extension Interfaces
 

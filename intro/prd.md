@@ -27,41 +27,52 @@ A Web3 application that combines staking mechanisms with eco-friendly behavior v
 - Platform token rewards: Calculated based on staked amount and fixed APR
 - Verification requirement: 3 daily verifications to unlock daily rewards
 
+### 2.5 Self Identity Verification
+- On-chain identity verification using Self protocol
+- Zero-knowledge proof generation for identity validation
+- Privacy-preserving confirmation of user identity
+- Protection against duplicate accounts and verification fraud
+- Optional age and nationality verification
+
 ## 3. Innovation Highlights
 - Integration of DeFi staking with eco-friendly behavior
 - Staking mechanism ensures user behavior authenticity
 - Direct link between daily eco-friendly actions and rewards
 - Simple and effective incentive model
+- Privacy-preserving identity verification to prevent fraud
 
 ## 4. User Journey
-1. User stakes ETH to enter official pool and gain verification eligibility
-2. User takes photos during daily reusable cup usage (3 times required)
-3. System automatically verifies photos and unlocks daily rewards
-4. User can claim platform token rewards
-5. User can choose to continue staking or withdraw ETH
+1. User completes Self identity verification using passport or identity document
+2. User stakes ETH to enter official pool and gain verification eligibility
+3. User takes photos during daily reusable cup usage (3 times required)
+4. System automatically verifies photos and unlocks daily rewards
+5. User can claim platform token rewards
+6. User can choose to continue staking or withdraw ETH
 
 ## 5. Real User Flow Simulation
 
-### 5.1 User Staking ETH
+### 5.1 User Identity Verification
 - User connects wallet to platform
+- User is prompted to complete Self identity verification
+- User completes passport/ID scanning through Self application
+- Self protocol generates zero-knowledge proof of identity
+- Smart contract verifies the proof and marks user as identity-verified
+
+### 5.2 User Staking ETH
 - User stakes 0.01 ETH to StakingPool contract
 - System records user's staked amount
 - User's staking status activated, allowing participation in eco verifications
 
-### 5.2 User Eco Verification
+### 5.3 User Eco Verification
 - User uses reusable cup and uploads photo to platform
 - Platform verifiers (AI system + manual review) confirm photo validity
 - Verifier calls VerificationRegistry contract to record verification
 - User completes required 3 daily verifications (e.g., morning, noon, evening)
 
-### 5.3 User Reward Eligibility
+### 5.4 User Reward Eligibility
 - System checks if user completed 3 verifications today
 - System confirms user hasn't claimed today's rewards
 - System confirms user's eligibility for rewards
-
-### 5.4 System Reward Calculation
-- Rewards calculated based on user's stake amount and daily APR (5%)
-- Example: 0.01 ETH stake, 5% daily rate = 0.0005 ETH equivalent in tokens daily
 
 ### 5.5 User Reward Claim
 - User clicks "Claim Reward" button
@@ -90,6 +101,7 @@ Different users staking different ETH amounts receive proportional rewards:
 - Reusable cup photo verification (3 times daily)
 - Platform token reward distribution
 - Time verification
+- Self identity verification integration
 
 ### Future Features (Version 2.0)
 - Community-built staking pools
@@ -105,6 +117,7 @@ Different users staking different ETH amounts receive proportional rewards:
 - AI Recognition: Reusable cup photo verification
 - Frontend Interface: Clean and intuitive user experience
 - Security Mechanism: Verification anti-cheat measures
+- Identity Verification: Self protocol integration for secure identity verification
 - Scalability: Interface preparation for future community pool features
 
 ## 8. Success Metrics

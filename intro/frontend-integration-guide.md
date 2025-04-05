@@ -8,16 +8,18 @@ This document provides a reference for smart contract functions and events in th
 3. [VerificationRegistry Contract](#verificationregistry-contract)
 4. [RewardController Contract](#rewardcontroller-contract)
 5. [EcoCupToken Contract](#ecocuptoken-contract)
-6. [Common Use Cases](#common-use-cases)
+6. [Self Identity Verification Integration](#self-identity-verification-integration)
+7. [Common Use Cases](#common-use-cases)
 
 ## Smart Contract Addresses
 
-Below are the deployed smart contract addresses (Base Sepolia Testnet):
+Below are the deployed smart contract addresses (Celo Alfajores Testnet):
 
-- EcoCupToken: `0xAc45De6353970462389974f1b4Cd1712D51c1983`
-- VerificationRegistry: `0x6d8030ADb227128a24EB5a189743B670295172e7`
-- RewardController: `0x5F0e11b566EC40feCb3Cbab69471fc6E898fF78B`
-- StakingPool: `0x435b529860C12Dd35A3255BDbf222450E485aE35`
+- EcoCupToken: `0x098C568b8EFd867E089D130504d6CE9218519Dc2`
+- VerificationRegistry: `0xF7C7a89e994a96C227E5911326aCdd5324261Fa3`
+- SelfVerification: `0x73a166998f24878c7d1Dd55230A9281AAfEb43C8`
+- RewardController: `0x3eA8E0860008fE95E22F2fb68728f40918Eed89E`
+- StakingPool: `0x6075431B8eB46fc86c100b44eD669766363e76E6`
 
 ## StakingPool Contract
 
@@ -74,6 +76,7 @@ Below are the deployed smart contract addresses (Base Sepolia Testnet):
 - **Returns**: None
 - **Notes**:
   - Only addresses with VERIFIER_ROLE can call this
+  - User must have completed Self identity verification
   - Write operation, requires signature
 
 #### canClaimReward
@@ -106,6 +109,16 @@ Below are the deployed smart contract addresses (Base Sepolia Testnet):
     - `rewardClaimed` - Whether reward has been claimed
 - **Notes**:
   - Read-only operation, no signature required
+
+#### isIdentityVerified
+- **Description**: Check if a user has completed Self identity verification
+- **Parameters**:
+  - `user` (address) - User address
+- **Returns**:
+  - `bool` - Whether the user has completed identity verification
+- **Notes**:
+  - Read-only operation, no signature required
+  - Returns true for all users if Self verification is disabled
 
 ### Events
 
@@ -205,31 +218,722 @@ Below are the deployed smart contract addresses (Base Sepolia Testnet):
   - `to` (address indexed) - Address of the recipient
   - `value` (uint256) - Amount of tokens transferred
 
+## Self Identity Verification Integration
+
+The EcoCup system uses Self protocol for identity verification. Users must complete identity verification before they can participate in the cup usage verification process. This section provides detailed implementation guidance for integrating Self identity verification into your frontend application.
+
+### Required Packages
+
+Install the necessary Self SDK packages:
+
+```bash
+npm install @selfxyz/qrcode @selfxyz/core
+# OR
+yarn add @selfxyz/qrcode @selfxyz/core
+```
+
+### 1. SelfVerification Contract Interface
+
+#### verifySelfProof
+- **Description**: Verifies a Self identity proof
+- **Parameters**:
+  - `proof` (VcAndDiscloseProof) - Zero-knowledge proof of user's identity
+- **Returns**: None
+- **Notes**:
+  - This function is called by the backend after receiving proof from Self
+  - The function checks that the proof is valid and marks the user as verified
+  - Write operation
+
+#### isIdentityVerified
+- **Description**: Check if a user has completed identity verification
+- **Parameters**:
+  - `user` (address) - User address
+- **Returns**:
+  - `bool` - Whether user is verified
+- **Notes**:
+  - Read-only operation, no signature required
+
+#### mockIdentityVerification (Testing Only)
+- **Description**: Mock function for testing identity verification
+- **Parameters**:
+  - `user` (address) - User address to mark as verified
+- **Returns**: None
+- **Notes**:
+  - Only callable by addresses with VERIFIER_ROLE
+  - Only for testing environments
+  - Write operation, requires signature
+
+### 2. Frontend Implementation
+
+#### Identity Verification Component
+
+Create a component that displays the Self QR code for users to scan:
+
+```tsx
+// components/SelfVerification.tsx
+'use client';
+
+import React, { useEffect } from 'react';
+import { useAccount, useContractRead } from 'wagmi';
+import SelfQRcodeWrapper, { SelfApp, SelfAppBuilder } from '@selfxyz/qrcode';
+import { verificationRegistryAddress, verificationRegistryABI } from '../constants/contracts';
+
+// Optional: Your application logo in Base64 format
+import { appLogo } from '../assets/appLogo';
+
+interface SelfVerificationProps {
+  onVerificationSuccess?: () => void;
+}
+
+const SelfVerification: React.FC<SelfVerificationProps> = ({ onVerificationSuccess }) => {
+  const { address, isConnected } = useAccount();
+
+  // Check if user is already verified
+  const { data: isVerified, isLoading, refetch } = useContractRead({
+    address: verificationRegistryAddress,
+    abi: verificationRegistryABI,
+    functionName: 'isIdentityVerified',
+    args: [address],
+    enabled: !!address,
+  });
+
+  // Create Self app instance
+  const selfApp = address ? new SelfAppBuilder({
+    appName: "EcoCup Verification",
+    scope: "1001", // Must match the scope set in your SelfVerification contract
+    endpoint: "/api/verify", // Your backend API endpoint
+    logoBase64: appLogo, // Your app logo
+    userId: address,
+    userIdType: "hex",
+    disclosures: { 
+      date_of_birth: true, // Request user's date of birth
+      // Uncomment if you need country information:
+      // country: true, 
+    },
+    devMode: process.env.NODE_ENV !== 'production',
+  }).build() : null;
+
+  // Handle successful verification
+  const handleSuccess = async () => {
+    console.log('Identity verification initiated successfully');
+    
+    // Refetch verification status after a delay to allow for transaction processing
+    setTimeout(() => {
+      refetch();
+      if (onVerificationSuccess) {
+        onVerificationSuccess();
+      }
+    }, 5000);
+  };
+
+  if (isLoading) return <div className="text-center">Checking verification status...</div>;
+  
+  if (isVerified) return (
+    <div className="p-4 bg-green-100 text-green-800 rounded-md">
+      ✓ Your identity has been verified
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col items-center p-4 border rounded-lg">
+      <h2 className="text-xl font-semibold mb-4">Identity Verification Required</h2>
+      <p className="mb-4 text-center">
+        Please scan this QR code with the Self app to verify your identity.
+        This is required before you can participate in the EcoCup verification process.
+      </p>
+      
+      {!isConnected ? (
+        <div className="text-red-600">Please connect your wallet first</div>
+      ) : !address ? (
+        <div className="text-yellow-600">Wallet address not available</div>
+      ) : !selfApp ? (
+        <div className="text-yellow-600">Loading verification QR code...</div>
+      ) : (
+        <div className="flex justify-center p-2 bg-white rounded-md shadow-md">
+          <SelfQRcodeWrapper
+            selfApp={selfApp}
+            type='websocket'
+            onSuccess={handleSuccess}
+          />
+        </div>
+      )}
+      
+      <div className="mt-4 text-sm text-gray-600">
+        Don't have the Self app? 
+        <a 
+          href="https://self.xyz/download" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="ml-1 text-blue-600 hover:underline"
+        >
+          Download here
+        </a>
+      </div>
+    </div>
+  );
+};
+
+export default SelfVerification;
+```
+
+#### Integration in Main Verification Flow
+
+In your main application flow, check for identity verification before allowing cup verification:
+
+```tsx
+// pages/verification.tsx
+'use client';
+
+import React, { useState } from 'react';
+import { useAccount, useContractRead } from 'wagmi';
+import SelfVerification from '../components/SelfVerification';
+import CupVerificationUpload from '../components/CupVerificationUpload';
+import { verificationRegistryAddress, verificationRegistryABI } from '../constants/contracts';
+
+const VerificationPage: React.FC = () => {
+  const { address } = useAccount();
+  const [verificationCompleted, setVerificationCompleted] = useState(false);
+
+  // Check if user is identity verified
+  const { data: isIdentityVerified, isLoading: isCheckingIdentity } = useContractRead({
+    address: verificationRegistryAddress,
+    abi: verificationRegistryABI,
+    functionName: 'isIdentityVerified',
+    args: [address],
+    enabled: !!address,
+  });
+
+  // Get today's verification count
+  const { data: verificationCount, isLoading: isCheckingCount, refetch: refetchCount } = useContractRead({
+    address: verificationRegistryAddress,
+    abi: verificationRegistryABI,
+    functionName: 'getVerificationCount',
+    args: [address],
+    enabled: !!address && !!isIdentityVerified,
+  });
+
+  const handleVerificationSuccess = () => {
+    setVerificationCompleted(true);
+    refetchCount();
+  };
+
+  if (!address) {
+    return <div className="p-4">Please connect your wallet to continue</div>;
+  }
+
+  if (isCheckingIdentity) {
+    return <div className="p-4">Checking identity verification status...</div>;
+  }
+
+  return (
+    <div className="container mx-auto max-w-2xl px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">EcoCup Verification</h1>
+      
+      {/* Step 1: Identity Verification */}
+      {!isIdentityVerified && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Step 1: Identity Verification</h2>
+          <SelfVerification onVerificationSuccess={handleVerificationSuccess} />
+        </div>
+      )}
+      
+      {/* Step 2: Cup Verification */}
+      {isIdentityVerified && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Step 2: Cup Usage Verification</h2>
+          
+          {!isCheckingCount && (
+            <div className="mb-4">
+              <p>Today's verifications: <strong>{Number(verificationCount || 0)}/3</strong></p>
+            </div>
+          )}
+          
+          <CupVerificationUpload 
+            onVerificationSuccess={handleVerificationSuccess}
+            disabledMessage={Number(verificationCount || 0) >= 3 ? "You've reached the daily verification limit" : ""}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default VerificationPage;
+```
+
+### 3. Backend Implementation
+
+Create an API endpoint to handle the verification from Self:
+
+```typescript
+// pages/api/verify.ts
+import { NextApiRequest, NextApiResponse } from 'next';
+import { getUserIdentifier } from '@selfxyz/core';
+import { ethers } from 'ethers';
+import { selfVerificationABI } from '../../constants/contracts';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  try {
+    const { proof, publicSignals } = req.body;
+
+    if (!proof || !publicSignals) {
+      return res.status(400).json({ 
+        message: 'Proof and publicSignals are required' 
+      });
+    }
+
+    console.log("Received proof:", proof);
+    console.log("Received public signals:", publicSignals);
+
+    // Extract user address from verification result
+    const userAddress = await getUserIdentifier(publicSignals, "hex");
+    console.log("User address from verification:", userAddress);
+
+    // Connect to Base Sepolia network
+    const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || "https://sepolia.base.org");
+    const signer = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
+    
+    const selfVerificationAddress = process.env.SELF_VERIFICATION_ADDRESS;
+    
+    if (!selfVerificationAddress) {
+      return res.status(500).json({ 
+        message: 'Self verification contract address not configured' 
+      });
+    }
+
+    const contract = new ethers.Contract(
+      selfVerificationAddress,
+      selfVerificationABI,
+      signer
+    );
+
+    try {
+      // Call the contract to verify the proof
+      // Note: The proof format must be transformed for the contract
+      const tx = await contract.verifySelfProof({
+        a: proof.a,
+        b: [
+          [proof.b[0][1], proof.b[0][0]],  // Note: b array indices are swapped
+          [proof.b[1][1], proof.b[1][0]],
+        ],
+        c: proof.c,
+        pubSignals: publicSignals,
+      });
+
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      console.log("Transaction confirmed:", receipt.hash);
+
+      return res.status(200).json({
+        status: 'success',
+        result: true,
+        message: 'Identity verification successful',
+        txHash: receipt.hash
+      });
+    } catch (contractError) {
+      console.error("Contract call failed:", contractError);
+      return res.status(400).json({
+        status: 'error',
+        result: false,
+        message: 'Verification failed on the blockchain',
+        error: contractError instanceof Error ? contractError.message : 'Unknown contract error'
+      });
+    }
+  } catch (error) {
+    console.error('Server error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Server error processing verification',
+      result: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+```
+
+### 4. Environment Configuration
+
+Create a `.env.local` file with the required configuration:
+
+```
+# RPC URL for Celo Alfajores
+RPC_URL=https://alfajores-forno.celo-testnet.org
+
+# Backend private key (for signing transactions to the blockchain)
+PRIVATE_KEY=your_private_key_here
+
+# Contract addresses
+SELF_VERIFICATION_ADDRESS=0x73a166998f24878c7d1Dd55230A9281AAfEb43C8
+VERIFICATION_REGISTRY_ADDRESS=0xF7C7a89e994a96C227E5911326aCdd5324261Fa3
+REWARD_CONTROLLER_ADDRESS=0x3eA8E0860008fE95E22F2fb68728f40918Eed89E
+STAKING_POOL_ADDRESS=0x6075431B8eB46fc86c100b44eD669766363e76E6
+ECO_CUP_TOKEN_ADDRESS=0x098C568b8EFd867E089D130504d6CE9218519Dc2
+```
+
+Make sure to never commit your private key to version control!
+
+### 5. Contract ABIs
+
+Create ABI files for your contracts:
+
+```typescript
+// constants/contracts.ts
+export const verificationRegistryAddress = process.env.NEXT_PUBLIC_VERIFICATION_REGISTRY_ADDRESS || '0xF7C7a89e994a96C227E5911326aCdd5324261Fa3';
+export const selfVerificationAddress = process.env.NEXT_PUBLIC_SELF_VERIFICATION_ADDRESS || '0x73a166998f24878c7d1Dd55230A9281AAfEb43C8';
+
+export const selfVerificationABI = [
+  {
+    "inputs": [
+      {
+        "components": [
+          { "internalType": "uint256[2]", "name": "a", "type": "uint256[2]" },
+          { "internalType": "uint256[2][2]", "name": "b", "type": "uint256[2][2]" },
+          { "internalType": "uint256[2]", "name": "c", "type": "uint256[2]" },
+          { "internalType": "uint256[]", "name": "pubSignals", "type": "uint256[]" }
+        ],
+        "internalType": "struct IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof",
+        "name": "proof",
+        "type": "tuple"
+      }
+    ],
+    "name": "verifySelfProof",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" }
+    ],
+    "name": "isIdentityVerified",
+    "outputs": [
+      { "internalType": "bool", "name": "", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" }
+    ],
+    "name": "mockIdentityVerification",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
+
+export const verificationRegistryABI = [
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" }
+    ],
+    "name": "isIdentityVerified",
+    "outputs": [
+      { "internalType": "bool", "name": "", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" }
+    ],
+    "name": "recordVerification",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" }
+    ],
+    "name": "getVerificationCount",
+    "outputs": [
+      { "internalType": "uint32", "name": "", "type": "uint32" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" }
+    ],
+    "name": "canClaimReward",
+    "outputs": [
+      { "internalType": "bool", "name": "", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  // Add other necessary functions...
+];
+
+// Add other contract ABIs as needed
+```
+
+### 6. Implementation Notes
+
+1. **Self App on Mobile Device**: Users need to have the Self app installed on their mobile device to scan the QR code. Provide a download link for users who don't have the app.
+
+2. **Websocket Communication**: The example uses websocket communication (`type='websocket'`) which allows for real-time updates between the Self app and your website.
+
+3. **Special Proof Format**: Note the special format for the proof's `b` parameter when calling the verifySelfProof function:
+   ```typescript
+   b: [
+     [proof.b[0][1], proof.b[0][0]],  // Indices are swapped!
+     [proof.b[1][1], proof.b[1][0]],
+   ]
+   ```
+   This format is required by the Solidity contract.
+
+4. **Server-Side API Key**: In production, you should secure your API with appropriate authentication and rate limiting.
+
+5. **Error Handling**: Implement comprehensive error handling in both frontend and backend to provide a good user experience.
+
+6. **Testing Mode**: For testing, you can use the `mockIdentityVerification` function, but remember this requires the caller to have the `VERIFIER_ROLE`.
+
+### 7. Admin Verification Path
+
+For admin users with `VERIFIER_ROLE`, you can implement a direct verification path that bypasses the QR code scanning process. This is useful for testing and administrative purposes.
+
+#### Implementing Dual Verification Paths
+
+Create a component that shows both verification options based on user permissions:
+
+```tsx
+// components/IdentityVerification.tsx
+'use client';
+
+import React, { useState } from 'react';
+import { useAccount, useContractRead, useContractWrite } from 'wagmi';
+import SelfQRcodeWrapper, { SelfAppBuilder } from '@selfxyz/qrcode';
+import { 
+  selfVerificationAddress, 
+  selfVerificationABI, 
+  verificationRegistryAddress, 
+  verificationRegistryABI 
+} from '../constants/contracts';
+import { appLogo } from '../assets/appLogo';
+
+// The keccak256 hash of "VERIFIER_ROLE"
+const VERIFIER_ROLE = "0x3a9a1512256ee5e7f6e09557a22aaf332f9a6bd11da45478ec08c5418f96a1b4";
+
+const IdentityVerification: React.FC = () => {
+  const { address } = useAccount();
+  const [targetAddress, setTargetAddress] = useState("");
+  
+  // Check if user has VERIFIER_ROLE
+  const { data: hasVerifierRole } = useContractRead({
+    address: selfVerificationAddress,
+    abi: selfVerificationABI,
+    functionName: 'hasRole',
+    args: [VERIFIER_ROLE, address],
+    enabled: !!address,
+  });
+  
+  // Check if user is already verified
+  const { data: isVerified, isLoading, refetch: refetchVerification } = useContractRead({
+    address: verificationRegistryAddress,
+    abi: verificationRegistryABI,
+    functionName: 'isIdentityVerified',
+    args: [address],
+    enabled: !!address,
+  });
+  
+  // Setup mock verification function call
+  const { write: mockVerify, isLoading: isMockVerifying } = useContractWrite({
+    address: selfVerificationAddress,
+    abi: selfVerificationABI,
+    functionName: 'mockIdentityVerification',
+  });
+  
+  // Create Self app instance for QR code
+  const selfApp = address ? new SelfAppBuilder({
+    appName: "EcoCup Verification",
+    scope: "1001",
+    endpoint: "/api/verify",
+    logoBase64: appLogo,
+    userId: address,
+    userIdType: "hex",
+    disclosures: { date_of_birth: true },
+    devMode: process.env.NODE_ENV !== 'production',
+  }).build() : null;
+  
+  // Handle successful QR verification
+  const handleSuccess = async () => {
+    console.log('Identity verification initiated successfully');
+    setTimeout(() => refetchVerification(), 5000);
+  };
+  
+  // Handle admin direct verification
+  const handleAdminVerify = () => {
+    if (!targetAddress) {
+      alert("Please enter a wallet address to verify");
+      return;
+    }
+    mockVerify({ args: [targetAddress] });
+    setTimeout(() => {
+      if (targetAddress.toLowerCase() === address?.toLowerCase()) {
+        refetchVerification();
+      }
+    }, 3000);
+  };
+  
+  if (isLoading) return <div className="text-center">Checking verification status...</div>;
+  
+  if (isVerified) return (
+    <div className="p-4 bg-green-100 text-green-800 rounded-md">
+      ✓ Your identity has been verified
+    </div>
+  );
+  
+  return (
+    <div className="space-y-8">
+      {/* Standard User Verification Path */}
+      <div className="flex flex-col items-center p-4 border rounded-lg">
+        <h2 className="text-xl font-semibold mb-4">Identity Verification</h2>
+        <p className="mb-4 text-center">
+          Please scan this QR code with the Self app to verify your identity.
+        </p>
+        
+        <div className="flex justify-center p-2 bg-white rounded-md shadow-md">
+          <SelfQRcodeWrapper
+            selfApp={selfApp}
+            type='websocket'
+            onSuccess={handleSuccess}
+          />
+        </div>
+        
+        <div className="mt-4 text-sm text-gray-600">
+          Don't have the Self app? 
+          <a 
+            href="https://self.xyz/download" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="ml-1 text-blue-600 hover:underline"
+          >
+            Download here
+          </a>
+        </div>
+      </div>
+      
+      {/* Admin Verification Path - Only shown to users with VERIFIER_ROLE */}
+      {hasVerifierRole && (
+        <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
+          <h2 className="text-xl font-semibold mb-4">Admin Verification (Testing Only)</h2>
+          <p className="mb-4 text-sm text-gray-600">
+            As an admin with VERIFIER_ROLE, you can directly verify users without requiring QR scanning.
+          </p>
+          
+          <div className="flex flex-col space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={targetAddress}
+                onChange={(e) => setTargetAddress(e.target.value)}
+                placeholder="Enter wallet address to verify"
+                className="flex-1 p-2 border rounded"
+              />
+              <button
+                onClick={handleAdminVerify}
+                disabled={isMockVerifying || !targetAddress}
+                className={`px-4 py-2 rounded ${
+                  isMockVerifying ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+                } text-white`}
+              >
+                {isMockVerifying ? "Verifying..." : "Verify Address"}
+              </button>
+            </div>
+            
+            <button
+              onClick={() => {
+                if (address) {
+                  mockVerify({ args: [address] });
+                  setTimeout(() => refetchVerification(), 3000);
+                }
+              }}
+              className="w-full p-2 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+            >
+              Verify My Own Address
+            </button>
+          </div>
+          
+          <div className="mt-4 text-xs text-red-500">
+            Note: This admin verification option should be disabled or hidden in production environments.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default IdentityVerification;
+```
+
+#### Configuration for Admin Verification Path
+
+1. **Environment-based Controls**:
+   ```typescript
+   // In your .env.local file
+   NEXT_PUBLIC_ENABLE_ADMIN_VERIFICATION=true  # Set to false in production
+   ```
+
+2. **Production Mode Control**:
+   ```tsx
+   {hasVerifierRole && (process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_ADMIN_VERIFICATION === 'true') && (
+     // Admin verification UI
+   )}
+   ```
+
+#### Security Considerations
+
+1. **Role-Based Access**: Always ensure only users with `VERIFIER_ROLE` can access the direct verification path.
+
+2. **Environment Protection**: Consider disabling the admin verification completely in production environments.
+
+3. **Audit Trail**: Implement logging for all admin verifications to maintain an audit trail.
+
+4. **UI Separation**: Clearly separate user flows to prevent confusion:
+   - Normal users should only see the QR code verification flow
+   - Admin users should see both options with clear labeling
+
+5. **Default to Secure Path**: Even for admins, make the QR code scanning the default/recommended option, with direct verification presented as a secondary choice.
+
 ## Common Use Cases
 
-### Case 1: User stakes ETH and performs verification
+### Case 1: Complete User Flow with Identity Verification
 
 1. User connects wallet
-2. User stakes ETH in StakingPool (call `stake` function)
-3. User uses eco-friendly cup and uploads photo for verification
-4. Check user's verification count for today (call `getVerificationCount` function)
-5. If user completes 3 verifications, user can claim reward
+2. User completes Self identity verification (if not already verified)
+3. User stakes ETH in StakingPool (call `stake` function)
+4. User uses eco-friendly cup and uploads photo for verification
+5. Backend verifies the photo and calls `recordVerification`
+6. User completes 3 verifications in a day
+7. User claims reward (call `distributeReward` function)
 
-### Case 2: Check user verification progress and reward status
+### Case 2: Check User Verification Progress
 
-1. Get user's verification count for today (call `getVerificationCount` function)
-2. Check if user can claim reward (call `canClaimReward` function)
-3. Calculate user's reward amount (call `calculateReward` function)
-4. Display user's token balance (call `balanceOf` function)
+1. Get user's identity verification status (call `isIdentityVerified` function)
+2. If verified, get today's verification count (call `getVerificationCount` function)
+3. Check if user can claim reward (call `canClaimReward` function)
+4. Calculate user's potential reward amount (call `calculateReward` function)
+5. Display user's token balance (call `balanceOf` function)
 
-### Case 3: Claim reward
+### Case 3: Admin Testing Flow
 
-1. Check if user can claim reward (call `canClaimReward` function)
-2. Call `distributeReward` function to distribute reward
-3. Listen to `RewardDistributed` event to confirm reward distribution success
-4. Update user's token balance (call `balanceOf` function)
+For development and testing purposes:
 
-### Case 4: Withdraw staked ETH
+1. Admin connects wallet with `VERIFIER_ROLE`
+2. Admin uses `mockIdentityVerification` to mark test users as verified
+3. Admin can test the verification and reward distribution process
+4. For production, remove any UI that allows calling the mock function
+
+### Case 4: Withdraw Staked ETH
 
 1. Get user's staked amount (call `getStakedAmount` function)
 2. User specifies amount to withdraw
@@ -241,17 +945,19 @@ Below are the deployed smart contract addresses (Base Sepolia Testnet):
 When interacting with these contracts using Wagmi library, please note:
 
 1. All amounts should be considered in terms of ETH's 18 decimal places
-2. User must complete 3 verifications daily to claim reward
-3. Platform token (EcoCupToken) minting can only be executed by RewardController contract
-4. Verification records can only be called by addresses with VERIFIER_ROLE
-5. Minimum staked amount is 0.0001 ETH
-6. Reward calculation based on user's staked ETH amount and current APR
-7. Default APR is 5% (represented as 500 in base 10000)
+2. User must complete identity verification before participating in cup verifications
+3. User must complete 3 verifications daily to claim reward
+4. Platform token (EcoCupToken) minting can only be executed by RewardController contract
+5. Verification records can only be called by addresses with VERIFIER_ROLE
+6. Minimum staked amount is 0.0001 ETH
+7. Reward calculation based on user's staked ETH amount and current APR
+8. Default APR is 5% (represented as 500 in base 10000)
 
 ### Contract ABI
 
-You can also view verified contract ABI on BaseScan:
-- EcoCupToken: [https://sepolia.basescan.org/address/0xAc45De6353970462389974f1b4Cd1712D51c1983](https://sepolia.basescan.org/address/0xAc45De6353970462389974f1b4Cd1712D51c1983)
-- VerificationRegistry: [https://sepolia.basescan.org/address/0x6d8030ADb227128a24EB5a189743B670295172e7](https://sepolia.basescan.org/address/0x6d8030ADb227128a24EB5a189743B670295172e7)
-- RewardController: [https://sepolia.basescan.org/address/0x5F0e11b566EC40feCb3Cbab69471fc6E898fF78B](https://sepolia.basescan.org/address/0x5F0e11b566EC40feCb3Cbab69471fc6E898fF78B)
-- StakingPool: [https://sepolia.basescan.org/address/0x435b529860C12Dd35A3255BDbf222450E485aE35](https://sepolia.basescan.org/address/0x435b529860C12Dd35A3255BDbf222450E485aE35) 
+You can also view verified contract ABI on CeloScan:
+- EcoCupToken: [https://alfajores.celoscan.io/address/0x098C568b8EFd867E089D130504d6CE9218519Dc2](https://alfajores.celoscan.io/address/0x098C568b8EFd867E089D130504d6CE9218519Dc2)
+- VerificationRegistry: [https://alfajores.celoscan.io/address/0xF7C7a89e994a96C227E5911326aCdd5324261Fa3](https://alfajores.celoscan.io/address/0xF7C7a89e994a96C227E5911326aCdd5324261Fa3)
+- SelfVerification: [https://alfajores.celoscan.io/address/0x73a166998f24878c7d1Dd55230A9281AAfEb43C8](https://alfajores.celoscan.io/address/0x73a166998f24878c7d1Dd55230A9281AAfEb43C8)
+- RewardController: [https://alfajores.celoscan.io/address/0x3eA8E0860008fE95E22F2fb68728f40918Eed89E](https://alfajores.celoscan.io/address/0x3eA8E0860008fE95E22F2fb68728f40918Eed89E)
+- StakingPool: [https://alfajores.celoscan.io/address/0x6075431B8eB46fc86c100b44eD669766363e76E6](https://alfajores.celoscan.io/address/0x6075431B8eB46fc86c100b44eD669766363e76E6) 
