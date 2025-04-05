@@ -23,6 +23,8 @@ libs = ["dependencies"]
 [etherscan]
   mainnet = { key = "${API_KEY_ETHERSCAN}" }
   base_sepolia = { key = "${API_KEY_BASESCAN}" }
+  celo = { key = "${API_KEY_CELOSCAN}" }
+  celo_alfajores = { key = "${API_KEY_CELOSCAN}" }
 
 [fmt]
   bracket_spacing = true
@@ -46,6 +48,8 @@ libs = ["dependencies"]
   polygon = "https://polygon-bor-rpc.publicnode.com"
   sepolia = "https://ethereum-sepolia-rpc.publicnode.com"
   base_sepolia= "https://base-sepolia.g.alchemy.com/v2/vjuA4yL0w7tXl0_ykpuWNiS8i9jgcogs"
+  celo-alfajores = "https://alfajores-forno.celo-testnet.org"
+  celo = "https://forno.celo.org"
 
 [dependencies]
 forge-std = { version = "1.9.2", git = "https://github.com/foundry-rs/forge-std.git", rev = "3353993420c6e488a2914ce02d88174e80ad80f8" }

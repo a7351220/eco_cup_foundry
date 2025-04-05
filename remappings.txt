@@ -4,3 +4,4 @@ forge-std-1.9.2/=dependencies/forge-std-1.9.2/src/
 forge-std/=dependencies/forge-std/src/
 halmos-cheatcodes/=dependencies/openzeppelin-contracts/lib/halmos-cheatcodes/src/
 openzeppelin-contracts/=dependencies/openzeppelin-contracts/
+@selfxyz/contracts/=node_modules/@selfxyz/contracts/
