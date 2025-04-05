@@ -1,13 +1,13 @@
-# Eco-Friendly Cup DeFi Verification System - Contract Functions and Events Reference
+# CupFi DeFi Verification System - Contract Functions and Events Reference
 
-This document provides a reference for smart contract functions and events in the Eco-Friendly Cup DeFi Verification System, for frontend developers using the Wagmi library for integration.
+This document provides a reference for smart contract functions and events in the CupFi DeFi Verification System, for frontend developers using the Wagmi library for integration.
 
 ## Table of Contents
 1. [Smart Contract Addresses](#smart-contract-addresses)
 2. [StakingPool Contract](#stakingpool-contract)
 3. [VerificationRegistry Contract](#verificationregistry-contract)
 4. [RewardController Contract](#rewardcontroller-contract)
-5. [EcoCupToken Contract](#ecocuptoken-contract)
+5. [CupFiToken Contract](#cupfitoken-contract)
 6. [Self Identity Verification Integration](#self-identity-verification-integration)
 7. [Common Use Cases](#common-use-cases)
 
@@ -15,28 +15,36 @@ This document provides a reference for smart contract functions and events in th
 
 Below are the deployed smart contract addresses (Celo Alfajores Testnet):
 
-- EcoCupToken: `0x098C568b8EFd867E089D130504d6CE9218519Dc2`
+- CupFiToken: `0x098C568b8EFd867E089D130504d6CE9218519Dc2`
 - VerificationRegistry: `0xF7C7a89e994a96C227E5911326aCdd5324261Fa3`
 - SelfVerification: `0x73a166998f24878c7d1Dd55230A9281AAfEb43C8`
 - RewardController: `0x3eA8E0860008fE95E22F2fb68728f40918Eed89E`
 - StakingPool: `0x6075431B8eB46fc86c100b44eD669766363e76E6`
+
+Below are the deployed smart contract addresses (Celo Mainnet):
+
+- CupFiToken: `0xcf9E16Da624FD6A2F7954ff041C7F250473FB6B3`
+- VerificationRegistry: `0x729fEd5Fa9703923206A7Ca732Bb84BcB00CadE3`
+- SelfVerification: `0x79eB256B30902588F79C217bF82C099e22A89798`
+- RewardController: `0x645261A2eeE8145CAe16B24ec4163c57992E4b80`
+- StakingPool: `0x312aB286ac8108eFE5bf9C6355aA149a364E27bB`
 
 ## StakingPool Contract
 
 ### Callable Functions
 
 #### stake
-- **Description**: Users stake ETH in the pool to gain verification eligibility
-- **Parameters**: None (but requires sending ETH)
+- **Description**: Users stake CELO in the pool to gain verification eligibility
+- **Parameters**: None (but requires sending CELO)
 - **Returns**: None
 - **Notes**:
-  - Sent ETH must be >= 0.0001 ETH (MIN_STAKE_AMOUNT)
+  - Sent CELO must be >= 0.0001 CELO (MIN_STAKE_AMOUNT)
   - Write operation, requires signature
 
 #### withdraw
-- **Description**: Withdraw previously staked ETH
+- **Description**: Withdraw previously staked CELO
 - **Parameters**:
-  - `amount` (uint256) - Amount of ETH to withdraw (in Wei)
+  - `amount` (uint256) - Amount of CELO to withdraw (in Wei)
 - **Returns**: None
 - **Notes**:
   - User cannot withdraw more than their staked amount
@@ -47,23 +55,23 @@ Below are the deployed smart contract addresses (Celo Alfajores Testnet):
 - **Parameters**:
   - `user` (address) - User address
 - **Returns**:
-  - `uint256` - Amount of ETH staked by user (in Wei)
+  - `uint256` - Amount of CELO staked by user (in Wei)
 - **Notes**:
   - Read-only operation, no signature required
 
 ### Events
 
 #### Staked
-- **Description**: Triggered when a user successfully stakes ETH
+- **Description**: Triggered when a user successfully stakes CELO
 - **Parameters**:
   - `user` (address indexed) - Address of the staking user
-  - `amount` (uint256) - Amount of ETH staked
+  - `amount` (uint256) - Amount of CELO staked
 
 #### Withdrawn
-- **Description**: Triggered when a user successfully withdraws ETH
+- **Description**: Triggered when a user successfully withdraws CELO
 - **Parameters**:
   - `user` (address indexed) - Address of the withdrawing user
-  - `amount` (uint256) - Amount of ETH withdrawn
+  - `amount` (uint256) - Amount of CELO withdrawn
 
 ## VerificationRegistry Contract
 
@@ -146,7 +154,7 @@ Below are the deployed smart contract addresses (Celo Alfajores Testnet):
 - **Returns**:
   - `uint256` - Amount of reward tokens that can be received
 - **Notes**:
-  - Reward based on user's staked ETH amount and current APR
+  - Reward based on user's staked CELO amount and current APR
   - Read-only operation, no signature required
 
 #### distributeReward
@@ -176,7 +184,7 @@ Below are the deployed smart contract addresses (Celo Alfajores Testnet):
   - `user` (address indexed) - User address
   - `amount` (uint256) - Amount of reward tokens
 
-## EcoCupToken Contract
+## CupFiToken Contract
 
 ### Callable Functions
 
@@ -220,7 +228,7 @@ Below are the deployed smart contract addresses (Celo Alfajores Testnet):
 
 ## Self Identity Verification Integration
 
-The EcoCup system uses Self protocol for identity verification. Users must complete identity verification before they can participate in the cup usage verification process. This section provides detailed implementation guidance for integrating Self identity verification into your frontend application.
+The CupFi system uses Self protocol for identity verification. Users must complete identity verification before they can participate in the cup usage verification process. This section provides detailed implementation guidance for integrating Self identity verification into your frontend application.
 
 ### Required Packages
 
@@ -571,7 +579,7 @@ SELF_VERIFICATION_ADDRESS=0x73a166998f24878c7d1Dd55230A9281AAfEb43C8
 VERIFICATION_REGISTRY_ADDRESS=0xF7C7a89e994a96C227E5911326aCdd5324261Fa3
 REWARD_CONTROLLER_ADDRESS=0x3eA8E0860008fE95E22F2fb68728f40918Eed89E
 STAKING_POOL_ADDRESS=0x6075431B8eB46fc86c100b44eD669766363e76E6
-ECO_CUP_TOKEN_ADDRESS=0x098C568b8EFd867E089D130504d6CE9218519Dc2
+CUPFI_TOKEN_ADDRESS=0x098C568b8EFd867E089D130504d6CE9218519Dc2
 ```
 
 Make sure to never commit your private key to version control!
@@ -910,7 +918,7 @@ export default IdentityVerification;
 
 1. User connects wallet
 2. User completes Self identity verification (if not already verified)
-3. User stakes ETH in StakingPool (call `stake` function)
+3. User stakes CELO in StakingPool (call `stake` function)
 4. User uses eco-friendly cup and uploads photo for verification
 5. Backend verifies the photo and calls `recordVerification`
 6. User completes 3 verifications in a day
@@ -933,30 +941,30 @@ For development and testing purposes:
 3. Admin can test the verification and reward distribution process
 4. For production, remove any UI that allows calling the mock function
 
-### Case 4: Withdraw Staked ETH
+### Case 4: Withdraw Staked CELO
 
 1. Get user's staked amount (call `getStakedAmount` function)
 2. User specifies amount to withdraw
-3. Call `withdraw` function to withdraw ETH
+3. Call `withdraw` function to withdraw CELO
 4. Listen to `Withdrawn` event to confirm withdrawal success
 
 ## Wagmi Usage Notes
 
 When interacting with these contracts using Wagmi library, please note:
 
-1. All amounts should be considered in terms of ETH's 18 decimal places
+1. All amounts should be considered in terms of CELO's 18 decimal places
 2. User must complete identity verification before participating in cup verifications
 3. User must complete 3 verifications daily to claim reward
-4. Platform token (EcoCupToken) minting can only be executed by RewardController contract
+4. Platform token (CupFiToken) minting can only be executed by RewardController contract
 5. Verification records can only be called by addresses with VERIFIER_ROLE
-6. Minimum staked amount is 0.0001 ETH
-7. Reward calculation based on user's staked ETH amount and current APR
+6. Minimum staked amount is 0.0001 CELO
+7. Reward calculation based on user's staked CELO amount and current APR
 8. Default APR is 5% (represented as 500 in base 10000)
 
 ### Contract ABI
 
 You can also view verified contract ABI on CeloScan:
-- EcoCupToken: [https://alfajores.celoscan.io/address/0x098C568b8EFd867E089D130504d6CE9218519Dc2](https://alfajores.celoscan.io/address/0x098C568b8EFd867E089D130504d6CE9218519Dc2)
+- CupFiToken: [https://alfajores.celoscan.io/address/0x098C568b8EFd867E089D130504d6CE9218519Dc2](https://alfajores.celoscan.io/address/0x098C568b8EFd867E089D130504d6CE9218519Dc2)
 - VerificationRegistry: [https://alfajores.celoscan.io/address/0xF7C7a89e994a96C227E5911326aCdd5324261Fa3](https://alfajores.celoscan.io/address/0xF7C7a89e994a96C227E5911326aCdd5324261Fa3)
 - SelfVerification: [https://alfajores.celoscan.io/address/0x73a166998f24878c7d1Dd55230A9281AAfEb43C8](https://alfajores.celoscan.io/address/0x73a166998f24878c7d1Dd55230A9281AAfEb43C8)
 - RewardController: [https://alfajores.celoscan.io/address/0x3eA8E0860008fE95E22F2fb68728f40918Eed89E](https://alfajores.celoscan.io/address/0x3eA8E0860008fE95E22F2fb68728f40918Eed89E)
