@@ -1,7 +1,48 @@
 [
   {
     "type": "constructor",
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "_identityVerificationHub",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_scope",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_attestationId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_olderThanEnabled",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "_olderThan",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_forbiddenCountriesEnabled",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "_forbiddenCountriesListPacked",
+        "type": "uint256[4]",
+        "internalType": "uint256[4]"
+      },
+      {
+        "name": "_ofacEnabled",
+        "type": "bool[3]",
+        "internalType": "bool[3]"
+      }
+    ],
     "stateMutability": "nonpayable"
   },
   {
@@ -13,19 +54,6 @@
         "name": "",
         "type": "bytes32",
         "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "REQUIRED_DAILY_VERIFICATIONS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -45,38 +73,6 @@
   },
   {
     "type": "function",
-    "name": "addVerifier",
-    "inputs": [
-      {
-        "name": "verifier",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "canClaimReward",
-    "inputs": [
-      {
-        "name": "user",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "getRoleAdmin",
     "inputs": [
       {
@@ -90,25 +86,6 @@
         "name": "",
         "type": "bytes32",
         "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getVerificationCount",
-    "inputs": [
-      {
-        "name": "user",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint32",
-        "internalType": "uint32"
       }
     ],
     "stateMutability": "view"
@@ -176,36 +153,10 @@
   },
   {
     "type": "function",
-    "name": "markRewardClaimed",
+    "name": "mockIdentityVerification",
     "inputs": [
       {
         "name": "user",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "recordVerification",
-    "inputs": [
-      {
-        "name": "user",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "removeVerifier",
-    "inputs": [
-      {
-        "name": "verifier",
         "type": "address",
         "internalType": "address"
       }
@@ -251,32 +202,6 @@
   },
   {
     "type": "function",
-    "name": "selfVerification",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract SelfVerification"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "setSelfVerification",
-    "inputs": [
-      {
-        "name": "_selfVerification",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "supportsInterface",
     "inputs": [
       {
@@ -296,48 +221,48 @@
   },
   {
     "type": "function",
-    "name": "userVerifications",
+    "name": "verifySelfProof",
     "inputs": [
       {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
+        "name": "proof",
+        "type": "tuple",
+        "internalType": "struct IVcAndDiscloseCircuitVerifier.VcAndDiscloseProof",
+        "components": [
+          {
+            "name": "a",
+            "type": "uint256[2]",
+            "internalType": "uint256[2]"
+          },
+          {
+            "name": "b",
+            "type": "uint256[2][2]",
+            "internalType": "uint256[2][2]"
+          },
+          {
+            "name": "c",
+            "type": "uint256[2]",
+            "internalType": "uint256[2]"
+          },
+          {
+            "name": "pubSignals",
+            "type": "uint256[21]",
+            "internalType": "uint256[21]"
+          }
+        ]
       }
     ],
-    "outputs": [
-      {
-        "name": "date",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "count",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "rewardClaimed",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "event",
-    "name": "RewardClaimed",
+    "name": "IdentityVerified",
     "inputs": [
       {
         "name": "user",
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      },
-      {
-        "name": "date",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -418,70 +343,6 @@
     "anonymous": false
   },
   {
-    "type": "event",
-    "name": "SelfVerificationSet",
-    "inputs": [
-      {
-        "name": "verificationContract",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "VerificationRecorded",
-    "inputs": [
-      {
-        "name": "user",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "date",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "count",
-        "type": "uint32",
-        "indexed": false,
-        "internalType": "uint32"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "VerifierAdded",
-    "inputs": [
-      {
-        "name": "verifier",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "VerifierRemoved",
-    "inputs": [
-      {
-        "name": "verifier",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
     "type": "error",
     "name": "AccessControlBadConfirmation",
     "inputs": []
@@ -501,5 +362,15 @@
         "internalType": "bytes32"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "InvalidAttestationId",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidScope",
+    "inputs": []
   }
 ]

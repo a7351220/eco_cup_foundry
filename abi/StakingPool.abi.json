@@ -3,7 +3,7 @@
     "type": "constructor",
     "inputs": [
       {
-        "name": "_token",
+        "name": "",
         "type": "address",
         "internalType": "address"
       },
